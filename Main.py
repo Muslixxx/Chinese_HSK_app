@@ -9,6 +9,19 @@ from typing import Dict, List, Optional
 import streamlit as st
 
 
+def _trigger_rerun() -> None:
+    """Force a rerun compatible with both legacy and modern Streamlit."""
+    rerun = getattr(st, "rerun", None)
+    if callable(rerun):
+        rerun()
+        return
+    experimental_rerun = getattr(st, "experimental_rerun", None)
+    if callable(experimental_rerun):
+        experimental_rerun()
+        return
+    raise RuntimeError("Streamlit rerun API unavailable in this version.")
+
+
 HSK1_VOCAB: List[Dict[str, str]] = [
     {"hanzi": "爱", "pinyin": "ài", "translation": "aimer"},
     {"hanzi": "八", "pinyin": "bā", "translation": "huit"},
@@ -249,7 +262,7 @@ def render_quiz() -> None:
                 st.warning("Sélectionnez une réponse avant de valider.")
             else:
                 evaluate_answer(choice)
-                st.experimental_rerun()
+                _trigger_rerun()
     else:
         st.info(st.session_state["feedback"])
         correct_answer = question["correct"]
@@ -260,7 +273,7 @@ def render_quiz() -> None:
             st.session_state["answered"] = False
             st.session_state["last_choice"] = None
             st.session_state["feedback"] = ""
-            st.experimental_rerun()
+            _trigger_rerun()
 
 
 def main() -> None:
@@ -284,7 +297,7 @@ def main() -> None:
     if st.sidebar.button("Lancer un nouveau quiz"):
         seed = random.randint(0, 10_000)
         reset_quiz(num_questions, seed=seed)
-        st.experimental_rerun()
+        _trigger_rerun()
 
     if "questions" not in st.session_state:
         reset_quiz(num_questions)
